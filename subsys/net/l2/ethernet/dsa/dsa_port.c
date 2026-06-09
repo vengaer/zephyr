@@ -10,6 +10,7 @@ LOG_MODULE_REGISTER(net_dsa_port, CONFIG_NET_DSA_LOG_LEVEL);
 #include <zephyr/net/phy.h>
 #include <zephyr/net/dsa_core.h>
 #include <zephyr/net/dsa_tag.h>
+#include <zephyr/sys/atomic.h>
 
 #if defined(CONFIG_NET_INTERFACE_NAME_LEN)
 #define INTERFACE_NAME_LEN CONFIG_NET_INTERFACE_NAME_LEN
@@ -85,14 +86,19 @@ static void dsa_port_phylink_change(const struct device *phydev, struct phy_link
 
 static void dsa_port_iface_init(struct net_if *iface)
 {
+	static atomic_t dsa_iface_idx = ATOMIC_INIT(0);
+
 	const struct device *dev = net_if_get_device(iface);
 	const struct dsa_port_config *cfg = dev->config;
 	char name[INTERFACE_NAME_LEN];
 	uint8_t mac_addr[6] = {0};
 	int ret;
 
+	/* Compilation error if atomic_val_t is ever changed from long */
+	_Generic(atomic_inc(&dsa_iface_idx), long: (void)0);
+
 	/* Set interface name */
-	snprintk(name, sizeof(name), "swp%d", cfg->port_idx);
+	snprintk(name, sizeof(name), "swp%ld", atomic_inc(&dsa_iface_idx));
 	net_if_set_name(iface, name);
 
 	ret = net_eth_mac_load(&cfg->mcfg, mac_addr);
