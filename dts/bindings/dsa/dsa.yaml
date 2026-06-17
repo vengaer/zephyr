@@ -35,3 +35,30 @@ child-binding:
       description:
         Tag protocol the switch using. The <zephyr/dt-bindings/ethernet/dsa_tag_proto.h>
         which provides macros should be included to use.
+
+    dsa-cascade-ports:
+      type: phandle-array
+      description: |
+        Used in cascading setups, i.e. when connecting daisy-chained switches to the SoC.
+        This phandle array is used in the node corresponding to a port on the upstream
+        switch - i.e. the switch positioned closer to the network core - to indicate which
+        port on the downstream switch it is connected to.
+
+        As an example, imagine a two-switch setup where the first switch with devicetree label
+        sw1 is connected to the SoC whereas the second switch with label sw2 is connected via
+        its own 0-based port number 3 to 0-based port 2 on sw1. In this scenario, the node
+        corresponding to port 3 on sw2 should set the dsa-cascade-ports property to <&sw1 2>.
+        Needless to say, the phandle &sw1 identifies the switch whereas the specifier - in this
+        example 2 - should match the reg property of the port on sw1 to which sw2 is connected.
+        Do note that sw1 neither needs nor should identify sw2 in any way - this is handled by
+        the DSA core.
+
+        A device node with this property set is, for all intents and purposes, treated as the
+        switch's conduit.
+
+    "#dsa-cascade-port-cells":
+      type: int
+      const: 2
+
+dsa-cascade-port-cells:
+  - port_idx
