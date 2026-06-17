@@ -204,6 +204,9 @@ enum ethernet_hw_caps {
 
 	/** TX-Injection supported */
 	ETHERNET_TXINJECTION_MODE	= BIT(20),
+
+	/** DSA switch cascading port */
+	ETHERNET_DSA_PORT		= BIT(21),
 };
 
 /** @cond INTERNAL_HIDDEN */

@@ -68,6 +68,7 @@ static struct ethernet_capabilities eth_hw_caps[] = {
 #ifdef CONFIG_NET_DSA
 	EC(ETHERNET_DSA_USER_PORT,        "DSA user port"),
 	EC(ETHERNET_DSA_CONDUIT_PORT,     "DSA conduit port"),
+	EC(ETHERNET_DSA_PORT,             "DSA cascading port"),
 #endif
 	EC(ETHERNET_TXINJECTION_MODE,     "TX-Injection supported"),
 };
