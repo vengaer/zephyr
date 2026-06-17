@@ -874,10 +874,18 @@ enum ethernet_hw_caps net_eth_get_hw_capabilities(struct net_if *iface)
 #if defined(CONFIG_NET_DSA)
 	struct ethernet_context *eth_ctx = net_if_l2_data(iface);
 
-	if (eth_ctx->dsa_port == DSA_CONDUIT_PORT) {
+	switch (eth_ctx->dsa_port) {
+	case DSA_CONDUIT_PORT:
 		caps = ETHERNET_DSA_CONDUIT_PORT;
-	} else if (eth_ctx->dsa_port == DSA_USER_PORT) {
+		break;
+	case DSA_USER_PORT:
 		caps = ETHERNET_DSA_USER_PORT;
+		break;
+	case DSA_PORT:
+		caps = ETHERNET_DSA_PORT;
+		break;
+	default:
+		break;
 	}
 #endif
 	if (api == NULL || api->get_capabilities == NULL) {
