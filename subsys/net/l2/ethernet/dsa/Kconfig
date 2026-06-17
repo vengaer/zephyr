@@ -24,6 +24,13 @@ config DSA_TAG_SIZE
 	help
 	  Set the DSA tag length in bytes.
 
+config DSA_CASCADING
+	bool "Support for daisy-chained switches"
+	default n
+	help
+	  Enabling support for switch cascading allows the DSA core to model
+	  daisy-chained switches.
+
 module = NET_DSA
 module-dep = NET_LOG
 module-str = Log level for DSA
