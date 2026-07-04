@@ -1,0 +1,245 @@
+# Copyright (c) 2026 Vilhelm Engström
+#
+# SPDX-License-Identifier: Apache-2.0
+
+description: Microchip KSZ8463 3-Port Ethernet Switch
+
+compatible: "microchip,ksz8463"
+
+include:
+  - name: base.yaml
+    property-allowlist:
+      - reg
+  - name: dsa.yaml
+  - name: pinctrl-device.yaml
+  - name: spi-device.yaml
+    property-allowlist:
+      - spi-max-frequency
+
+properties:
+  reset-gpios:
+    type: phandle-array
+    description: |
+      Optional reset pin. If provided, the pin is asserted 10ms during initialization. If
+      no pin is provided, the chip is subjected to a software reset instead.
+
+      If provided, this phandle array is expected to specify a single GPIO.
+
+  int-gpios:
+    type: phandle-array
+    description: |
+      GPIOs to monitor for interrupts.
+
+      If provided, the phandle array should contain exactly one GPIO.
+
+  microchip,legal-packet-size-check-en:
+    type: boolean
+    description: |
+      Enable legal maximum packet size check.
+
+  microchip,igmp-snoop-en:
+    type: boolean
+    description: |
+      Enable IGMP snooping.
+
+  microchip,mld-snoop-en:
+    type: boolean
+    description: |
+      Enable MLD snooping.
+
+  microchip,spi-lock-timeout:
+    type: int
+    default: 50
+    description: |
+      Number of milliseconds before giving up acquiring the SPI lock.
+
+  microchip,spi-operational-timeout:
+    type: int
+    default: 100
+    description: |
+      Number of milliseconds to wait for the chip to respond over SPI.
+
+  microchip,port-led-mode:
+    type: string
+    default: "LED1: Activity, LED0: Link"
+    description: |
+      Configure behavior of the two LEDs.
+    enum:
+      - "LED1: Speed, LED0: Link And Activity"
+      - "LED1: Activity, LED0: Link"
+      - "LED1: Full-Duplex, LED0: Link And Activity"
+      - "LED1: Full-Duplex, LED0: Link"
+
+  microchip,fixed-link-speed:
+    type: string
+    default: "10BASE Half-Duplex"
+    description: |
+      Speed to fall back on if link partner does not support auto-negotiation, or if
+      auto-negotiation fails with a capable partner.
+    enum:
+      - "10BASE Half-Duplex"
+      - "10BASE Full-Duplex"
+      - "100BASE Half-Duplex"
+      - "100BASE Full-Duplex"
+
+child-binding:
+  description: |
+    Each child node represents a switch port.
+
+  properties:
+    reg:
+      required: true
+      description: |
+        Zero-indexed port number. Physical port 1 should have value 0, physical port 2 the value 1
+        and physical port 3 the value 2.
+
+    ethernet:
+      description: |
+        A phandle referring to the Ethernet node to which switch port 3 - the CPU port - is
+        connected. Should be set only for the port with reg value 2.
+
+    phy-handle:
+      description: |
+        A phandle referring to a PHY. Each user port, i.e. ports 1 and 2, requires a unique PHY
+        node. Simply create new nodes should the ones already defined in the devicetree not suffice.
+
+        Should be set for the ports with reg values 0 and 1.
+
+    phy-connection-type:
+      description: |
+        PHY hardware interface to use. Whether to use MII or RMII is ultimately determined by the
+        product choice - KSZ8463ML and KSZ8463FML use MII whereas KSZ8463RL and KSZ8463FRL RMII -
+        and not by this property.
+
+        This value should match that configured for the ethernet phandle set in the CPU port node.
+        The driver validates that the choice is compatible with the connected chip.
+
+        Defaults to "internal" and is required only by the CPU port.
+
+    microchip,autoneg-poll-interval:
+      type: int
+      default: 100
+      description: |
+        Interval, in milliseconds, at which the port is polled for auto-negotiation completion.
+
+    microchip,autoneg-timeout:
+      type: int
+      default: 5000
+      description: |
+        Number of milliseconds after which auto-negotiation is assumed to have failed.
+
+        Should be less than microchip,autoneg-poll-interval.
+
+    microchip,disable-eee:
+      type: boolean
+      description: |
+        Disable Energy-Efficient Ethernet permanently.
+
+        Note that, even should this property not be set, the driver disables EEE while disabling
+        auto-negotiation as a workaround for errata 4 in KSZ8463MLI_FMLI_Prod_0.3_errata.
+
+examples: |
+  /* KSZ8463 connected to SPI bus 1 on an STM32H755. MAC connected
+   * to the CPU port via MII.
+   *
+   * See samples/net/ethernet/dsa_ksz8463mli for a complete example
+   */
+  -
+    &mdio {
+
+      /* Declare PHYs for the switch user ports */
+
+      phy1: ethernet-phy@1 {
+        compatible = "ethernet-phy";
+        reg = <1>;
+
+        status = "okay";
+      };
+
+      phy2: ethernet-phy@2 {
+        compatible = "ethernet-phy";
+        reg = <2>;
+
+        status = "okay";
+      };
+    };
+
+    &mac {
+      /* For the KSZ8463ML and KSZ8463FML. Use "rmii" for
+       * KSZ8463RL and KSZ8463RML */
+      phy-connection-type = "mii";
+
+      status = "okay";
+    };
+
+    &spi1 {
+      /* ... */
+
+      sw1: ethernet-switch@0 {
+        compatible = "microchip,ksz8463";
+
+        reg = <0>;
+
+        spi-max-frequency = <DT_FREQ_M(50)>;
+
+        #address-cells = <1>;
+        #size-cells = <0>;
+
+        /* Enable IGMP snooping */
+        microchip,igmp-snoop-en;
+
+        /* Enable MLD snooping */
+        microchip,mld-snoop-en;
+
+        status = "okay";
+
+        /* User port 1 */
+        pt1: port@0 {
+          compatible = "zephyr,dsa-port";
+
+          reg = <0>;
+
+          phy-handle = <&phy1>;
+
+          zephyr,random-mac-address;
+
+          microchip,autoneg-poll-interval = <500>;
+          microchip,autoneg-timeout = <5000>;
+
+          status = "okay";
+        };
+
+        /* User port 2 */
+        pt2: port@1 {
+          compatible = "zephyr,dsa-port";
+
+          reg = <1>;
+
+          phy-handle = <&phy2>;
+
+          zephyr,random-mac-address;
+
+          microchip,autoneg-poll-internval = <500>;
+          microchip,autoneg-timeout = <5000>;
+
+          status = "okay";
+        };
+
+        /* CPU port */
+        pt3: port@2 {
+          compatible = "zephyr,dsa-port";
+
+          reg = <2>;
+
+          /* Connect CPU port to Ethernet MAC */
+          ethernet = <&mac>;
+
+          /* Must match that of the ethernet phandle */
+          phy-connection-type = "mii";
+
+          /* Connect tag protocol on CPU port */
+          dsa-tag-protocol = <DSA_TAG_PROTO_KSZ8463>;
+
+          status = "okay";
+      };
+  };
