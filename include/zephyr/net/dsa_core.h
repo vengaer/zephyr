@@ -65,13 +65,51 @@ extern "C" {
 		.init_ports = 0,                                                                   \
 		.num_ports = DT_INST_CHILD_NUM_STATUS_OKAY(n),                                     \
 		.dev = DEVICE_DT_INST_GET(n),                                                      \
+		.port_cascade = DSA_CASCADING_PORTS(n),                                            \
 	};                                                                                         \
 	DT_INST_FOREACH_CHILD_STATUS_OKAY_VARGS(n, fn, n);
 
+/** @cond INTERNAL_HIDDEN */
+#ifdef CONFIG_DSA_CASCADING
+
+#define DSA_CASCADING_FIELDS(n)                                                                    \
+	COND_CODE_1(IS_ENABLED(CONFIG_DSA_CASCADING),                                              \
+		({ DT_INST_FOREACH_STATUS_OKAY(n, DSA_CASCADE_PORT_POPULATE) }),                   \
+		({ 0 }))
+
+#define DSA_CASCADE_PORT_POPULATE(port)                                                            \
+	[DT_REG_ADDR(port)] = COND_CODE_1(							   \
+			DT_NODE_HAS_STATUS_OKAY(DT_PHANDLE(port, dsa_cascade_ports)),		   \
+			(&(struct const dsa_cascade) {                                             \
+				.dev = DEVICE_DT_GET(DT_PHANDLE(port, dsa_cascade_ports)),         \
+				.port_idx = DT_PHA(port, dsa_cascade_ports, port_idx),             \
+			}),									   \
+			(NULL)								           \
+		),
+
+/* DSA cascade port abstraction.
+ *
+ * Used during initialization.
+ */
+struct dsa_cascade {
+	/* Pointer to the device representing the downstream switch */
+	const struct device *dev;
+
+	/* Zero-based index of the downstream switch port on @c dev */
+	unsigned int port_idx;
+};
+
+/** @endcond */
+
 /** DSA switch context data */
 struct dsa_switch_context {
-	/** Pointers to all DSA user network interfaces */
-	struct net_if *iface_user[DSA_PORT_MAX_COUNT];
+	union {
+		/** Pointers to all DSA user network interfaces */
+		struct net_if *iface_user[DSA_PORT_MAX_COUNT];
+
+		/** Pointers to cascade ports parsed from devicetree */
+		const struct dsa_cascade *port_cascade[DSA_PORT_MAX_COUNT];
+	};
 
 	/** Pointer to DSA conduit network interface */
 	struct net_if *iface_conduit;
