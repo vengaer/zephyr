@@ -12,21 +12,64 @@ LOG_MODULE_REGISTER(net_dsa_core, CONFIG_NET_DSA_LOG_LEVEL);
 
 struct net_if *dsa_recv(struct net_if *iface, struct net_pkt *pkt)
 {
+	const struct device *dev __unused;
+	const struct ethernet_context *eth_ctx __unused;
+	const struct dsa_port_config *cfg __unused;
+	const struct dsa_switch_context *dsa_switch_ctx __unused;
+
 	if (iface == NULL || pkt == NULL) {
 		return iface;
 	}
 
 	/* Tag protocol handles to untag and re-direct interface */
-	return dsa_tag_recv(iface, pkt);
+	iface = dsa_tag_recv(iface, pkt);
+	if (unlikely(!iface)) {
+		return NULL;
+	}
+
+#ifdef CONFIG_DSA_CASCADING
+	/* Resolve casading internally */
+	do {
+		eth_ctx = net_if_l2_data(iface);
+		if (unlikely(!eth_ctx)) {
+			return NULL;
+		}
+
+		/* Done when reading the first non-DSA port */
+		if (eth_ctx->dsa_port != DSA_PORT) {
+			break;
+		}
+
+		dev = net_if_get_device(iface);
+		if (unlikely(!dev)) {
+			return NULL;
+		}
+
+		cfg = dev->config;
+		dsa_switch_ctx = dev->data;
+
+		/* Get the next interface in the chain, potentially redirecting
+		 * via the tag protocol. Since the iface_user and iface_cascade
+		 * use the same memory, simply relying on the normal tag
+		 * protocol recv is sufficient
+		 */
+		iface = dsa_tag_recv(iface, pkt);
+	} while (1);
+#endif
+
+	return iface;
 }
 
 int dsa_xmit(const struct device *dev, struct net_pkt *pkt)
 {
+	const struct device *dev_upstream __unused;
+	const struct ds_port_config *cfg __unused = dev->config;
 	struct dsa_switch_context *dsa_switch_ctx = dev->data;
 	struct net_if *iface = net_if_lookup_by_dev(dev);
-	struct net_if *iface_conduit = dsa_switch_ctx->iface_conduit;
-	const struct device *dev_conduit = net_if_get_device(iface_conduit);
-	const struct ethernet_api *eth_api_conduit = dev_conduit->api;
+	const struct ethernet_context *eth_ctx __unused = net_if_l2_data(iface);
+	struct net_if *iface_conduit = NULL;
+	const struct device *dev_conduit = NULL;
+	const struct ethernet_api *eth_api_conduit = NULL;
 	struct net_pkt *dsa_pkt;
 	struct net_pkt *clone;
 	int ret;
@@ -56,7 +99,20 @@ int dsa_xmit(const struct device *dev, struct net_pkt *pkt)
 	/* Tag protocol handles pkt first */
 	dsa_pkt = dsa_tag_xmit(iface, clone);
 
+#ifdef CONFIG_DSA_CASCADING
+	/* Handle cascading */
+	if (eth_ctx->dsa_port == DSA_PORT) {
+		/* Reroute the packet through the upstream interface */
+		iface = dsa_switch_ctx->iface_cascace[cfg->port_idx];
+		dev_upstream = net_if_get_device(iface);
+		dsa_switch_ctx = dev_upstream->data;
+	}
+#endif
+
 	/* Transmit from conduit port */
+	iface_conduit = dsa_switch_ctx->iface_conduit;
+	dev_conduit = net_if_get_device(iface_conduit);
+	eth_api_conduit = dev_conduit->api;
 	ret = eth_api_conduit->send(dev_conduit, dsa_pkt);
 
 	/* Release the cloned pkt */
