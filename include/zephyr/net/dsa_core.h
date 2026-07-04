@@ -112,6 +112,9 @@ struct dsa_switch_context {
 		/** Pointers to all DSA user network interfaces */
 		struct net_if *iface_user[DSA_PORT_MAX_COUNT];
 
+		/** Pointers to DSA cascading network interfaces */
+		struct net_if *iface_cascade[DSA_PORT_MAX_COUNT];
+
 		/** Pointers to cascade ports parsed from devicetree */
 		const struct dsa_cascade *port_cascade[DSA_PORT_MAX_COUNT];
 	};
@@ -141,6 +144,9 @@ struct dsa_switch_context {
 
 	/** Bitmask used to synchronize initialization */
 	uint8_t init_bits[ROUND_UP(DSA_PORT_MAX_COUNT, 8u) >> 3u];
+
+	/** Bitmask used to identify cascading ports during initialization */
+	uint8_t cascade_bits[ROUND_UP(DSA_PORT_MAX_COUNT, 8u) >> 3u];
 
 #endif /* CONFIG_DSA_CASCADING || __DOXYGEN__ */
 };

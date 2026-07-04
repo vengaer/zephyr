@@ -6,6 +6,8 @@
 #include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(net_dsa_port, CONFIG_NET_DSA_LOG_LEVEL);
 
+#include <stdbool.h>
+
 #include <zephyr/net/ethernet.h>
 #include <zephyr/net/phy.h>
 #include <zephyr/net/dsa_core.h>
@@ -20,9 +22,146 @@ LOG_MODULE_REGISTER(net_dsa_port, CONFIG_NET_DSA_LOG_LEVEL);
 
 #if defined(CONFIG_DSA_CASCADING)
 
+static inline bool dsa_bit_is_set(const uint8_t *mask, unsigned int idx)
+{
+	return mask[idx >> 3u] & BIT(idx & 7u);
+}
+
 static inline void dsa_bit_set(uint8_t *mask, unsigned int idx)
 {
 	mask[idx >> 3u] |= BIT(idx & 0x07u);
+}
+
+static inline bool dsa_port_is_cascading_downstream(const struct device *dev)
+{
+	const struct dsa_port_config *cfg = dev->config;
+	const struct dsa_switch_context *dsa_switch_ctx = dev->data;
+
+	return dsa_bit_is_set(dsa_switch_ctx->cascade_bits, cfg->port_idx);
+}
+
+static inline bool dsa_is_cascading_port(const struct device *dev)
+{
+	const struct dsa_port_config *cfg = dev->config;
+	const struct dsa_switch_context *dsa_switch_ctx = dev->data;
+
+	return dsa_port_is_cascading_downstream(dev) ||
+	       !!dsa_switch_ctx->port_cascade[cfg->port_idx];
+}
+
+static int dsa_connect_to_upstream(const struct device *dev)
+{
+	struct net_if *iface, *iface_upstream;
+	const struct device *dev_upstream;
+	const struct dsa_port_config *cfg_upstream;
+	struct dsa_switch_context *dsa_switch_ctx_upstream;
+	const struct dsa_port_config *cfg = dev->config;
+	const struct dsa_switch_context *dsa_switch_ctx = dev->data;
+
+	/* Upstream port initialization is guaranteed to have completed here */
+	iface_upstream = dsa_switch_ctx->iface_cascade[cfg->port_idx];
+	dev_upstream = net_if_get_device(iface_upstream);
+	cfg_upstream = dev_upstream->config;
+	dsa_switch_ctx_upstream = dev_upstream->data;
+
+	iface = net_if_lookup_by_dev(dev);
+	if (unlikely(!iface)) {
+		return -ENODEV;
+	}
+
+	/* Upstream port should route its packets via this interface */
+	dsa_switch_ctx_upstream->iface_cascade[cfg_upstream->port_idx] = iface;
+
+	/* Mark upstream port as used for cascading */
+	dsa_bit_set(dsa_switch_ctx_upstream->cascade_bits, cfg_upstream->port_idx);
+	return 0;
+}
+
+static int dsa_connect_to_upstream_late(const struct dsa_switch_context *dsa_switch_ctx_downstream,
+					const struct dsa_cascade *cascade)
+{
+	const struct device *dev_downstream;
+	struct net_if *iface_downstream = dsa_switch_ctx_downstream->iface_user[cascade->port_idx];
+	struct ethernet_context *eth_ctx_downstream = net_if_l2_data(iface_downstream);
+
+	/* Mark as DSA port */
+	eth_ctx_dowmstream->dsa_port = DSA_PORT;
+
+	/* Connect the downstream port to the upstream */
+	dev_downstream = net_if_get_device(iface_downstream);
+	return dsa_connect_to_upstream(dev_downstream);
+}
+
+static int dsa_connect_to_downstream(const struct device *dev)
+{
+	int ret;
+	struct net_if *iface_downstream;
+	const struct dsa_cascade *cascade;
+	const struct device *dev_downstream;
+	struct ethernet_context *eth_ctx_downstream;
+	struct dsa_switch_context *dsa_switch_ctx_downstream;
+	const struct dsa_port_config *cfg = dev->config;
+	const struct dsa_switch_context *dsa_switch_ctx = dev->data;
+
+	/* Contents parsed from the dsa-cascade-ports phandle array */
+	cascade = dsa_switch_ctx->port_cascade[cfg->port_idx];
+
+	/* Get the downstream's switch context */
+	dsa_switch_ctx_downstream = dsa_switch_context_lookup_by_dev(cascade->dev);
+	if (unlikely(!dsa_switch_ctx_downstream)) {
+		return -ENODEV;
+	}
+
+	dsa_switch_ctx_downstream->iface_cascade[cascade->port_idx] = iface;
+
+	/* Mark downstream for cascading */
+	dsa_bit_set(dsa_switch_context_downstream->cascade_bits, cascade->port_idx);
+
+	/* Cascading setups may be configured s.t. each switch injects its own
+	 * tag. Properly processing such packets requires that cascading
+	 * interfaces support tagging just as a regular conduit would
+	 */
+	dsa_tag_setup(dev);
+
+	/* Packets arriving at this switch should be routed through the upstream
+	 * cascading port, i.e. this one
+	 */
+	dsa_switch_ctx->iface_conduit = iface;
+
+	ret = 0;
+	/* If the downstream port was initialized before the upstream, the former is
+	 * now a DSA_USER_PORT. Such ports must be reconfigured s.t. they become DSA_PORTs
+	 */
+	if (dsa_bit_is_set(dsa_switch_ctx_dowmstream->init_bits, cascade->port_idx)) {
+		ret = dsa_connect_to_upstream_late(dsa_switch_ctx_downstream, cascade);
+	}
+
+	return ret;
+}
+
+static int dsa_connect_cascading_ports(const struct device *dev)
+{
+	int ret;
+	const struct dsa_port_config *cfg = dev->config;
+	struct net_if *iface = net_if_lookup_by_dev(dev);
+	struct ethernet_context *eth_ctx = net_if_l2_data(iface);
+
+	if (unlikely(cfg->ethernet_connection)) {
+		LOG_ERR("Refusing to configure cascading on CPU port %d", cfg->port_idx);
+		return -EINVAL;
+	}
+
+	/* This is a DSA port */
+	eth_ctx->dsa_port = DSA_PORT;
+	eth_ctx->dsa_switch_ctx = dsa_switch_ctx;
+
+	if (dsa_port_is_cascading_downstream(dev)) {
+		ret = dsa_connect_to_upstream(dev);
+	} else {
+		ret = dsa_connect_to_downstream(dev);
+	}
+
+	return ret;
 }
 
 #endif /* CONFIG_DSA_CASCADING */
@@ -37,6 +176,15 @@ int dsa_port_initialize(const struct device *dev)
 	int err = 0;
 
 	dsa_switch_ctx->init_ports++;
+
+#ifdef CONFIG_DSA_CASCADING
+	if (dsa_is_cascading_port(dev)) {
+		err = dsa_connect_cascading_ports(dev);
+		if (err) {
+			goto out;
+		}
+	}
+#endif
 
 	/* Find the connection of conduit port and cpu port */
 	if (dsa_switch_ctx->iface_conduit == NULL && cfg->ethernet_connection != NULL) {
@@ -55,7 +203,7 @@ int dsa_port_initialize(const struct device *dev)
 		eth_ctx_conduit->dsa_port = DSA_CONDUIT_PORT;
 	}
 
-	if (cfg->ethernet_connection == NULL) {
+	if (cfg->ethernet_connection == NULL && eth_ctx->dsa_port != DSA_PORT) {
 		eth_ctx->dsa_port = DSA_USER_PORT;
 		eth_ctx->dsa_switch_ctx = dsa_switch_ctx;
 		dsa_switch_ctx->iface_user[cfg->port_idx] = iface;
