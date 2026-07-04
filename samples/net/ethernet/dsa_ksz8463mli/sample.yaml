@@ -1,0 +1,14 @@
+sample:
+  description: KSZ8463 DSA sample
+  name: KSZ8463MLI DSA sample
+common:
+  harness: net
+  tags:
+    - net
+    - dsa
+tests:
+  sample.net.dsa:
+    build_only: true
+    platform_allow:
+      - nucleo_h755zi_q/stm32h755xx/m7
+    depends_on: eth
