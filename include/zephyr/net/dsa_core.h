@@ -136,6 +136,13 @@ struct dsa_switch_context {
 
 	/** Pointer to the switch associated with this context */
 	const struct device *const dev;
+
+#if defined(CONFIG_DSA_CASCADING) || defined(__DOXYGEN__)
+
+	/** Bitmask used to synchronize initialization */
+	uint8_t init_bits[ROUND_UP(DSA_PORT_MAX_COUNT, 8u) >> 3u];
+
+#endif /* CONFIG_DSA_CASCADING || __DOXYGEN__ */
 };
 
 /**

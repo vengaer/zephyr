@@ -18,6 +18,15 @@ LOG_MODULE_REGISTER(net_dsa_port, CONFIG_NET_DSA_LOG_LEVEL);
 #define INTERFACE_NAME_LEN 10
 #endif
 
+#if defined(CONFIG_DSA_CASCADING)
+
+static inline void dsa_bit_set(uint8_t *mask, unsigned int idx)
+{
+	mask[idx >> 3u] |= BIT(idx & 0x07u);
+}
+
+#endif /* CONFIG_DSA_CASCADING */
+
 int dsa_port_initialize(const struct device *dev)
 {
 	const struct dsa_port_config *cfg = dev->config;
@@ -58,6 +67,13 @@ int dsa_port_initialize(const struct device *dev)
 			goto out;
 		}
 	}
+
+#ifdef CONFIG_DSA_CASCADING
+
+	/* Let potential cascading switches know port is initialized */
+	dsa_bit_set(dsa_switch_ctx->init_bits, cfg->port_idx);
+
+#endif /* CONFIG_DSA_CASCADING */
 
 out:
 	/* All ports are initialized. May need switch setup. */
