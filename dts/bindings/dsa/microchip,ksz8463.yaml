@@ -133,6 +133,11 @@ child-binding:
         Note that, even should this property not be set, the driver disables EEE while disabling
         auto-negotiation as a workaround for errata 4 in KSZ8463MLI_FMLI_Prod_0.3_errata.
 
+    dsa-tag-protocol:
+      description: |
+        Tag protocol to use for the switch. Should be set only for the CPU port and must have the
+        value DSA_TAG_PROTO_KSZ8463 defined in <zephyr/dt-bindings/ethernet/dsa_tag_proto.h>.
+
 examples: |
   /* KSZ8463 connected to SPI bus 1 on an STM32H755. MAC connected
    * to the CPU port via MII.

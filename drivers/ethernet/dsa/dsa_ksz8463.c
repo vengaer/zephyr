@@ -14,6 +14,7 @@
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/drivers/pinctrl.h>
 #include <zephyr/drivers/spi.h>
+#include <zephyr/dt-bindings/ethernet/dsa_tag_proto.h>
 #include <zephyr/irq.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
@@ -1329,6 +1330,35 @@ static enum ethernet_hw_caps ksz8463_get_capabilities(const struct device *ptdev
 	return ETHERNET_LINK_10BASE | ETHERNET_LINK_100BASE;
 }
 
+static inline int ksz8463_enable_tail_tagging(const struct device *dev)
+{
+	const struct ksz8463_config *cfg = dev->config;
+
+	return ksz8463_spi_updateb(&cfg->spi, KSZ8463_REG_SGCR8_HI, KSZ8463_SGCR8_HI_TAIL_TAG_EN,
+				   KSZ8463_SGCR8_HI_TAIL_TAG_EN);
+}
+
+static int ksz8463_connect_tag_protocol(struct dsa_switch_context *dsa_switch_ctx, int tag_proto)
+{
+	const struct device *dev;
+	const struct ksz8463_prv_data *prv_data = dsa_switch_ctx->prv_data;
+
+	dev = prv_data->dev;
+
+	switch (tag_proto) {
+	case DSA_TAG_PROTO_NOTAG:
+		/* Leave tagging disabled */
+		return 0;
+	case DSA_TAG_PROTO_KSZ8463:
+		break;
+	default:
+		LOG_ERR("Unsupported protocol 0x%x", (unsigned int)tag_proto);
+		return -ENOTSUP;
+	}
+
+	return ksz8463_enable_tail_tagging(dev);
+}
+
 static int ksz8463_hard_reset(const struct device *dev)
 {
 	int ret;
@@ -1438,6 +1468,7 @@ static struct dsa_api ksz8463_dsa_api = {
 	.switch_setup = ksz8463_switch_setup,
 	.port_phylink_change = ksz8463_port_phylink_change,
 	.get_capabilities = ksz8463_get_capabilities,
+	.connect_tag_protocol = ksz8463_connect_tag_protocol,
 };
 
 #define KSZ8463_PINCTRL_DT_DEFINE(node_id)                                                         \
@@ -1483,6 +1514,27 @@ static struct dsa_api ksz8463_dsa_api = {
 
 #define KSZ8463_IS_USER_PORT(node_id) DT_NODE_HAS_PROP(node_id, phy_handle)
 
+#define KSZ8463_VALIDATE_TAG_PROTO(node_id)                                                        \
+	COND_CODE_1(DT_NODE_HAS_PROP(pt, dsa_tag_protocol),					   \
+		(BUILD_ASSERT(									   \
+			DT_NODE_HAS_PROP(pt, ethernet),						   \
+			"dsa-tag-protocol should be set only for the "				   \
+			"CPU port"								   \
+		);										   \
+												   \
+		BUILD_ASSERT(									   \
+			DT_PROP(pt, dsa_tag_protocol) ==					   \
+				DSA_TAG_PROTO_KSZ8463,						   \
+			"dsa-tag-protocol must be DSA_TAG_PROTO_KSZ8463"			   \
+		);										   \
+												   \
+		BUILD_ASSERT(									   \
+			IS_ENABLED(CONFIG_DSA_TAG_PROTOCOL_KSZ8463),				   \
+			"Please enable CONFIG_DSA_TAG_PROTOCOL_KSZ8463"				   \
+		);),										   \
+		(EMPTY)										   \
+	)
+
 #define KSZ8463_PORT_INIT(pt, n)                                                                   \
 	BUILD_ASSERT(DT_PROP(pt, microchip_autoneg_poll_interval) <                                \
 			      DT_PROP(pt, microchip_autoneg_timeout),                              \
@@ -1510,11 +1562,14 @@ static struct dsa_api ksz8463_dsa_api = {
 		.ptdev = DEVICE_DT_GET(pt),                                                        \
 	};                                                                                         \
                                                                                                    \
+	KSZ8463_VALIDATE_TAG_PROTO(pt);                                                            \
+                                                                                                   \
 	static const struct dsa_port_config ksz8463_pcg_##n##pt = {                                \
 		.mcfg = NET_ETH_MAC_DT_CONFIG_INIT(pt),                                            \
 		.port_idx = DT_REG_ADDR(pt),                                                       \
 		.phy_dev = DEVICE_DT_GET_OR_NULL(DT_PHANDLE(pt, phy_handle)),                      \
 		.phy_mode = DT_PROP_OR(pt, phy_connection_type, "internal"),                       \
+		.tag_proto = DT_PROP_OR(pt, dsa_tag_protocol, DSA_TAG_PROTO_NOTAG),                \
 		.ethernet_connection = DEVICE_DT_GET_OR_NULL(DT_PHANDLE(pt, ethernet)),            \
 		.prv_config = &ksz8463_##n##pt,                                                    \
 	};                                                                                         \
@@ -1571,8 +1626,8 @@ static struct dsa_api ksz8463_dsa_api = {
 		.pkt_sz_chk_en = DT_INST_PROP(n, microchip_legal_packet_size_check_en),            \
 		.rst_gpio = KSZ8463_GPIO_DT_SPEC_OR_NULL(n, reset_gpios),                          \
 		.irq_gpio = KSZ8463_GPIO_DT_SPEC_OR_NULL(n, int_gpios),                            \
-		.dev = DEVICE_DT_INST_GET(n),                                                      \
 		.pincfg = KSZ8463_PINCTRL_DT_INST_CFG_OR_NULL(n),                                  \
+		.dev = DEVICE_DT_INST_GET(n),                                                      \
 	};                                                                                         \
                                                                                                    \
 	DEVICE_DT_INST_DEFINE(n, ksz8463_init, NULL, &ksz8463_data_##n, &ksz8463_config_##n,       \
