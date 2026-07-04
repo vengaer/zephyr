@@ -10,6 +10,7 @@
 #ifndef ZEPHYR_INCLUDE_NET_DSA_CORE_H_
 #define ZEPHYR_INCLUDE_NET_DSA_CORE_H_
 
+#include <assert.h>
 #include <errno.h>
 #include <zephyr/device.h>
 #include <zephyr/devicetree.h>
@@ -50,6 +51,10 @@ extern "C" {
 #define DSA_PORT_INST_INIT(port, n, cfg)                                                           \
 	ETH_NET_DEVICE_DT_DEFINE(port, dsa_port_initialize, NULL, &dsa_switch_context_##n, cfg,    \
 				 CONFIG_ETH_INIT_PRIORITY, &dsa_eth_api, NET_ETH_MTU)
+
+static_assert(!IS_ENABLED(CONFIG_DSA_CASCADING) || CONFIG_ETH_INIT_PRIORITY < CONFIG_NET_INIT_PRIO,
+	      "Network stack must be initialized after Ethernet drivers");
+
 /**
  * @brief Macro for DSA switch instance initialization.
  *

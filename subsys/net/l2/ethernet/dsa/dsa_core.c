@@ -67,11 +67,16 @@ int dsa_xmit(const struct device *dev, struct net_pkt *pkt)
 
 int dsa_eth_init(struct net_if *iface)
 {
-	struct ethernet_context *eth_ctx = net_if_l2_data(iface);
+	const struct ethernet_context *eth_ctx = net_if_l2_data(iface);
 
-	if (eth_ctx->dsa_port == DSA_CONDUIT_PORT) {
+	switch (eth_ctx->dsa_port) {
+	case DSA_PORT:
+	case DSA_CONDUIT_PORT:
 		net_if_flag_clear(iface, NET_IF_IPV4);
 		net_if_flag_clear(iface, NET_IF_IPV6);
+		break;
+	default:
+		break;
 	}
 
 	return 0;
