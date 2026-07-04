@@ -152,6 +152,15 @@ enum {
 	/* Switch global control register 7, high byte. 8-bit access */
 	KSZ8463_REG_SGCR7_HI = KSZ8463_REG_SGCR7_LO + 1,
 
+	/* Switch global control register 8. 16-bit access */
+	KSZ8463_REG_SGCR8 = 0x0ac,
+
+	/* Switch global control register 8, low byte. 8-bit access */
+	KSZ8463_REG_SGCR8_LO = KSZ8463_REG_SGCR8,
+
+	/* Switch global control register 8, high byte. 8-bit access */
+	KSZ8463_REG_SGCR8_HI = KSZ8463_REG_SGCR8_LO + 1,
+
 	/* PCS EEE control register. 8-bit access*/
 	KSZ8463_REG_PCSEEEC = 0x0f3,
 
@@ -301,6 +310,15 @@ enum {
 
 	/* LED mode bitmask, bits in high byte */
 	KSZ8463_SGCR7_HI_PORT_LED_MODE_MASK = KSZ8463_SGCR7_PORT_LED_MODE_MASK >> 8,
+};
+
+/* Switch global control register 8 */
+enum {
+	/* Set to enable tail tagging on port 3 */
+	KSZ8463_SGCR8_TAIL_TAG_EN = BIT(8),
+
+	/* Set to enable tail tagging on port 3, index in high byte */
+	KSZ8463_SGCR8_HI_TAIL_TAG_EN = KSZ8463_SGCR8_TAIL_TAG_EN >> 8,
 };
 
 /* Port x status register */
