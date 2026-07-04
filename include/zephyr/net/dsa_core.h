@@ -59,11 +59,12 @@ extern "C" {
  * @param fn	DSA port instance init function.
  */
 #define DSA_SWITCH_INST_INIT(n, _dapi, data, fn)                                                   \
-	struct dsa_switch_context dsa_switch_context_##n = {                                       \
+	STRUCT_SECTION_ITERABLE(dsa_switch_context, dsa_switch_context_##n) = {                    \
 		.dapi = _dapi,                                                                     \
 		.prv_data = data,                                                                  \
 		.init_ports = 0,                                                                   \
 		.num_ports = DT_INST_CHILD_NUM_STATUS_OKAY(n),                                     \
+		.dev = DEVICE_DT_INST_GET(n),                                                      \
 	};                                                                                         \
 	DT_INST_FOREACH_CHILD_STATUS_OKAY_VARGS(n, fn, n);
 
@@ -89,6 +90,9 @@ struct dsa_switch_context {
 
 	/** DSA tagger data provided by instance when connecting to tag protocol */
 	void *tagger_data;
+
+	/** Pointer to the switch associated with this context */
+	const struct device *const dev;
 };
 
 /**
@@ -196,6 +200,17 @@ int dsa_xmit(const struct device *dev, struct net_pkt *pkt);
  *  - Interface to redirect
  */
 struct net_if *dsa_recv(struct net_if *iface, struct net_pkt *pkt);
+
+/*
+ * Look up switch context for the provided device.
+ *
+ * param dev: Device representing the switch.
+ *
+ * Returns:
+ *  - Address of the DSA switch context associated with dev, or NULL if no
+ *    such context is found.
+ */
+struct dsa_switch_context *dsa_switch_context_lookup_by_dev(const struct device *dev);
 
 /*
  * DSA ethernet init function to handle flags

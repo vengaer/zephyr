@@ -76,3 +76,14 @@ int dsa_eth_init(struct net_if *iface)
 
 	return 0;
 }
+
+struct dsa_switch_context *dsa_switch_context_lookup_by_dev(const struct device *dev)
+{
+	STRUCT_SECTION_FOREACH(dsa_switch_context, dsa_switch_ctx) {
+		if (dsa_switch_ctx->dev == dev) {
+			return dsa_switch_ctx;
+		}
+	}
+
+	return NULL;
+}
