@@ -10,6 +10,7 @@ LOG_MODULE_REGISTER(net_dsa_port, CONFIG_NET_DSA_LOG_LEVEL);
 #include <zephyr/net/phy.h>
 #include <zephyr/net/dsa_core.h>
 #include <zephyr/net/dsa_tag.h>
+#include <zephyr/net/promiscuous.h>
 
 #if defined(CONFIG_NET_INTERFACE_NAME_LEN)
 #define INTERFACE_NAME_LEN CONFIG_NET_INTERFACE_NAME_LEN
@@ -33,6 +34,12 @@ int dsa_port_initialize(const struct device *dev)
 		dsa_switch_ctx->iface_conduit = net_if_lookup_by_dev(cfg->ethernet_connection);
 		if (dsa_switch_ctx->iface_conduit == NULL) {
 			LOG_ERR("DSA: Conduit iface NOT found!");
+		} else if (IS_ENABLED(CONFIG_DSA_PROMISC_ON_CONDUIT)) {
+			err = net_promisc_mode_on(dsa_switch_ctx->iface_conduit);
+
+			if (err) {
+				LOG_ERR("DSA: Could not enable promiscuous mode");
+			}
 		}
 
 		/* Set up tag protocol on the cpu port */
