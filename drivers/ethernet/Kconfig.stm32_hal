@@ -41,6 +41,12 @@ config ETH_STM32_HAL_API_V2
 		   || SOC_SERIES_STM32MP13X \
 		   || SOC_SERIES_STM32N6X
 	select USE_STM32_HAL_ETH_EX if SOC_SERIES_STM32N6X
+	select DSA_PROMISC_ON_CONDUIT if NET_DSA \
+			&& (SOC_SERIES_STM32H5X \
+			|| SOC_SERIES_STM32H7X \
+			|| SOC_SERIES_STM32H7RSX \
+			|| SOC_SERIES_STM32MP13X \
+			|| SOC_SERIES_STM32N6X)
 	help
 	  Use the official STM32Cube HAL driver instead of the legacy one.
 
