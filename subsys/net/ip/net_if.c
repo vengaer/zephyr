@@ -16,6 +16,7 @@ LOG_MODULE_REGISTER(net_if, CONFIG_NET_IF_LOG_LEVEL);
 #include <stdlib.h>
 #include <string.h>
 #include <zephyr/net/conn_mgr_connectivity.h>
+#include <zephyr/net/erps.h>
 #include <zephyr/net/igmp.h>
 #include <zephyr/net/ipv4_autoconf.h>
 #include <zephyr/net/mld.h>
@@ -6347,6 +6348,10 @@ void net_if_carrier_on(struct net_if *iface)
 	}
 
 	net_if_unlock(iface);
+
+#if defined(CONFIG_ERPS)
+	net_erps_ctl(iface, ERPS_CLEAR_SIGNAL_FAIL);
+#endif
 }
 
 void net_if_carrier_off(struct net_if *iface)
@@ -6362,6 +6367,10 @@ void net_if_carrier_off(struct net_if *iface)
 	}
 
 	net_if_unlock(iface);
+
+#if defined(CONFIG_ERPS)
+	net_erps_ctl(iface, ERPS_SIGNAL_FAIL);
+#endif
 }
 
 void net_if_dormant_on(struct net_if *iface)
