@@ -136,6 +136,11 @@ struct dsa_api {
 	int (*get_config)(const struct device *dev,
 			  enum ethernet_config_type type,
 			  struct ethernet_config *config);
+
+#if defined(CONFIG_NET_FDB_MGMT) || defined(__DOXYGEN__)
+	/** Manage forwarding database */
+	int (*fdb_mgmt)(const struct device *dev, enum fdb_mgmt_cmd cmd);
+#endif
 };
 
 /**

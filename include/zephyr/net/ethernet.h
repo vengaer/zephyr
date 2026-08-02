@@ -471,6 +471,12 @@ struct ethernet_config {
 
 /** @endcond */
 
+/** Forwarding database management command */
+enum fdb_mgmt_cmd {
+	/** Flush forwarding database */
+	FDB_MGMT_FLUSH		= 0,
+};
+
 /** Ethernet statistics type (bitmap) */
 enum ethernet_stats_type {
 	/** Common statistics only (excludes vendor statistics) */
@@ -547,6 +553,10 @@ struct ethernet_api {
 
 	/** Send a network packet */
 	int (*send)(const struct device *dev, struct net_pkt *pkt);
+
+#if defined(CONFIG_NET_FDB_MGMT)
+	int (*fdb_mgmt)(const struct device *dev, enum fdb_mgmt_cmd cmd);
+#endif /* CONFIG_NET_FDB_MGMT */
 };
 
 /** @cond INTERNAL_HIDDEN */
@@ -1454,6 +1464,28 @@ static inline const struct device *net_eth_get_ptp_clock(struct net_if *iface)
  * ethernet interface index does not support PTP.
  */
 __syscall const struct device *net_eth_get_ptp_clock_by_index(int index);
+
+/**
+ * @brief Execute forwarding database management command
+ *
+ * @param iface The interface for which the FDB is to be modified
+ * @param cmd   Command to execute
+ *
+ * @retval 0       Management successfully completed
+ * @retval -ENOSYS FDB management not supported for this device
+ * @retval <0      Negative errno indicating what went wrong
+ */
+#if defined(CONFIG_NET_FDB_MGMT)
+int net_eth_fdb_mgmt(struct net_if *iface, enum fdb_mgmt_cmd cmd);
+#else
+static inline const int net_eth_fdb_mgmt(struct net_if *iface, enum fdb_mgmt_cmd cmd)
+{
+	ARG_UNUSED(iface);
+	ARG_UNUSED(cmd);
+
+	return -ENOSYS;
+}
+#endif
 
 /**
  * @brief Check if the Ethernet L2 network interface can perform Wi-Fi.
