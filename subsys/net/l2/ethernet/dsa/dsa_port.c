@@ -190,6 +190,19 @@ static int dsa_get_config(const struct device *dev,
 	return dsa_switch_ctx->dapi->get_config(dev, type, config);
 }
 
+#ifdef CONFIG_NET_FDB_MGMT
+static int dsa_fdb_mgmt(const struct device *dev, enum fdb_mgmt_cmd cmd)
+{
+	const struct dsa_switch_context *dsa_switch_ctx = dev->data;
+
+	if (!dsa_switch_ctx->dapi->fdb_mgmt) {
+		return -ENOTSUP;
+	}
+
+	return dsa_switch_ctx->dapi->fdb_mgmt(dev, cmd);
+}
+#endif /* CONFIG_NET_FDB_MGMT */
+
 const struct ethernet_api dsa_eth_api = {
 	.iface_api.init = dsa_port_iface_init,
 	.get_phy = dsa_port_get_phy,
@@ -200,4 +213,7 @@ const struct ethernet_api dsa_eth_api = {
 	.get_capabilities = dsa_port_get_capabilities,
 	.set_config = dsa_set_config,
 	.get_config = dsa_get_config,
+#ifdef CONFIG_NET_FDB_MGMT
+	.fdb_mgmt = dsa_fdb_mgmt,
+#endif
 };

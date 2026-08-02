@@ -159,4 +159,10 @@ config NET_CHECKSUM_OFFLOAD
 	  If supported by the driver checksum checking and calculation
 	  is offloaded.
 
+config NET_FDB_MGMT
+	bool "Forwarding database managmenet"
+	default n
+	help
+	  Allow explicit management of dynamically learned MAC addresses.
+
 endif # NET_L2_ETHERNET

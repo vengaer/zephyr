@@ -983,6 +983,26 @@ const struct device *z_impl_net_eth_get_ptp_clock_by_index(int index)
 }
 #endif /* CONFIG_PTP_CLOCK */
 
+#if defined(CONFIG_NET_FDB_MGMT)
+int net_eth_fdb_mgmt(struct net_if *iface, enum fdb_mgmt_cmd cmd)
+{
+	const struct device *dev = net_if_get_device(iface);
+	const struct ethernet_api *api = dev->api;
+
+	NET_ASSERT(api != NULL);
+
+	if (net_if_l2(iface) != &NET_L2_GET_NAME(ETHERNET)) {
+		return -EINVAL;
+	}
+
+	if (!api->fdb_mgmt) {
+		return -ENOSYS;
+	}
+
+	return api->fdb_mgmt(dev, cmd);
+}
+#endif /* CONFIG_NET_FDB_MGMT */
+
 #if defined(CONFIG_NET_PROMISCUOUS_MODE)
 int net_eth_promisc_mode(struct net_if *iface, bool enable)
 {
