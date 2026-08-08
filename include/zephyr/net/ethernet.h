@@ -201,6 +201,9 @@ enum ethernet_hw_caps {
 
 	/** TX-Injection supported */
 	ETHERNET_TXINJECTION_MODE	= BIT(20),
+
+	/** Forwarding database management */
+	ETHERNET_FDB_MGMT		= BIT(21),
 };
 
 /** @cond INTERNAL_HIDDEN */
