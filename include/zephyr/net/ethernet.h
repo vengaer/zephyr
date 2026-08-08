@@ -230,6 +230,7 @@ enum ethernet_config_type {
 	ETHERNET_CONFIG_TYPE_RX_CHECKSUM_SUPPORT,
 	ETHERNET_CONFIG_TYPE_TX_CHECKSUM_SUPPORT,
 	ETHERNET_CONFIG_TYPE_EXTRA_TX_PKT_HEADROOM,
+	ETHERNET_CONFIG_TYPE_FDB,
 };
 
 enum ethernet_qav_param_type {
@@ -446,6 +447,12 @@ enum ethernet_checksum_support {
 	ETHERNET_CHECKSUM_SUPPORT_UDP			= NET_IF_CHECKSUM_UDP_BIT,
 };
 
+/** Forwarding database management command */
+enum ethernet_fdb_mgmt_command {
+	/** Flush the forwarding database */
+	ETHERNET_FDB_FLUSH,
+};
+
 /** @cond INTERNAL_HIDDEN */
 
 struct ethernet_config {
@@ -464,6 +471,8 @@ struct ethernet_config {
 		int ports_num;
 
 		enum ethernet_checksum_support chksum_support;
+
+		enum ethernet_fdb_mgmt_command fdb_mgmt_cmd;
 
 		struct ethernet_filter filter;
 

@@ -177,6 +177,13 @@ static int ethernet_set_config(uint64_t mgmt_request,
 
 		memcpy(&config.filter, &params->filter, sizeof(struct ethernet_filter));
 		type = ETHERNET_CONFIG_TYPE_FILTER;
+	} else if (mgmt_request == NET_REQUEST_ETHERNET_FLUSH_FDB) {
+		if (!is_hw_caps_supported(dev, iface, ETHERNET_FDB_MGMT)) {
+			return -ENOTSUP;
+		}
+
+		type = ETHERNET_CONFIG_TYPE_FDB;
+		config.fdb_mgmt_cmd = ETHERNET_FDB_FLUSH;
 	} else {
 		return -EINVAL;
 	}
