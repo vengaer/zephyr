@@ -55,9 +55,10 @@ int dsa_xmit(const struct device *dev, struct net_pkt *pkt)
 {
 	struct dsa_switch_context *dsa_switch_ctx = dev->data;
 	struct net_if *iface = net_if_lookup_by_dev(dev);
-	struct net_if *iface_conduit = dsa_switch_ctx->iface_conduit;
-	const struct device *dev_conduit = net_if_get_device(iface_conduit);
-	const struct ethernet_api *eth_api_conduit = dev_conduit->api;
+	const struct ethernet_api *eth_api_conduit;
+	const struct ethernet_context *eth_ctx;
+	const struct device *dev_upstream;
+	const struct device *dev_conduit;
 	struct net_pkt *dsa_pkt;
 	struct net_pkt *clone;
 	int ret;
@@ -87,7 +88,30 @@ int dsa_xmit(const struct device *dev, struct net_pkt *pkt)
 	/* Tag protocol handles pkt first */
 	dsa_pkt = dsa_tag_xmit(iface, clone);
 
+	if (IS_ENABLED(CONFIG_DSA_CASCADING)) {
+		/* Resolve cascading */
+		while (dsa_pkt != NULL) {
+			iface = dsa_switch_ctx->iface_conduit;
+			eth_ctx = net_if_l2_data(iface);
+
+			/* Keep going until a non-DSA port (i.e. the conduit) is reached */
+			if (eth_ctx->dsa_port != DSA_PORT) {
+				break;
+			}
+
+			/* Insert DSA port tag */
+			dsa_pkt = dsa_tag_xmit(iface, dsa_pkt);
+
+			dev_upstream = net_if_get_device(iface);
+			dsa_switch_ctx = dev_upstream->data;
+		}
+	} else {
+		iface = dsa_switch_ctx->iface_conduit;
+	}
+
 	/* Transmit from conduit port */
+	dev_conduit = net_if_get_device(iface);
+	eth_api_conduit = dev_conduit->api;
 	ret = eth_api_conduit->send(dev_conduit, dsa_pkt);
 
 	/* Release the cloned pkt */
