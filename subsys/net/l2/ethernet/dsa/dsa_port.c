@@ -87,6 +87,7 @@ static void dsa_port_iface_init(struct net_if *iface)
 {
 	static unsigned int dsa_iface_idx;
 
+	const struct ethernet_context *eth_ctx = net_if_l2_data(iface);
 	const struct device *dev = net_if_get_device(iface);
 	const struct dsa_port_config *cfg = dev->config;
 	char name[INTERFACE_NAME_LEN];
@@ -106,13 +107,17 @@ static void dsa_port_iface_init(struct net_if *iface)
 		net_if_set_link_addr(iface, mac_addr, sizeof(mac_addr), NET_LINK_ETHERNET);
 	}
 
-	if (cfg->ethernet_connection != NULL) {
-		/* DSA CPU port used only for DSA management */
+	switch (eth_ctx->dsa_port) {
+	case DSA_PORT:
+	case DSA_CPU_PORT:
+		/* DSA CPU and cascade ports used only for DSA management */
 		net_if_flag_clear(iface, NET_IF_IPV4);
 		net_if_flag_clear(iface, NET_IF_IPV6);
 
 		net_if_carrier_off(iface);
 		return;
+	default:
+		break;
 	}
 
 	/*
