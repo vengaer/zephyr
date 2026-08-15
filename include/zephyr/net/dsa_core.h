@@ -64,13 +64,39 @@ extern "C" {
 		.prv_data = data,                                                                  \
 		.init_ports = 0,                                                                   \
 		.num_ports = DT_INST_CHILD_NUM_STATUS_OKAY(n),                                     \
+		.dev_dsa = {DT_INST_FOREACH_CHILD_STATUS_OKAY(n, DSA_GET_DSA_DEV)},                \
 	};                                                                                         \
 	DT_INST_FOREACH_CHILD_STATUS_OKAY_VARGS(n, fn, n);
 
+/** @cond INTERNAL_HIDDEN */
+
+#define DSA_CASCADE_DOWNSTREAM(port_id) DT_PHANDLE(port_id, dsa_cascade_downstream)
+
+#define DSA_GET_DSA_DEV(port_id)                                                                   \
+	COND_CODE_1(                                                                               \
+		UTIL_AND(IS_ENABLED(CONFIG_DSA_CASCADING),                                         \
+			DT_NODE_HAS_STATUS_OKAY(DSA_CASCADE_DOWNSTREAM(port_id))),                 \
+		([DT_REG_ADDR(port_id)] = DEVICE_DT_GET(DSA_CASCADE_DOWNSTREAM(port_id))),         \
+		(NULL)),
+
+/** @endcond */
+
 /** DSA switch context data */
 struct dsa_switch_context {
-	/** Pointers to all DSA user network interfaces */
-	struct net_if *iface_user[DSA_PORT_MAX_COUNT];
+	union {
+		/** Pointers to all DSA user network interfaces */
+		struct net_if *iface_user[DSA_PORT_MAX_COUNT];
+
+		/** @cond INTERNAL_HIDDEN */
+
+		/* Pointers to cascade port information.
+		 *
+		 * These may be accessed only in dsa_port_initialize().
+		 */
+		const struct device *dev_dsa[DSA_PORT_MAX_COUNT];
+
+		/** @endcond */
+	};
 
 	/** Pointer to DSA conduit network interface */
 	struct net_if *iface_conduit;
