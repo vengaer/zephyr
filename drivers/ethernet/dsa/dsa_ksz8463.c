@@ -1883,13 +1883,16 @@ static int ksz8463_init(const struct device *dev)
 		     "Port 1 must not have an ethernet phandle");                                  \
 	BUILD_ASSERT(!DT_NODE_HAS_PROP(DT_INST_CHILD_BY_UNIT_ADDR_INT(inst, 1), ethernet),         \
 		     "Port 2 must not have an ethernet phandle");                                  \
-	BUILD_ASSERT(DT_NODE_HAS_PROP(DT_INST_CHILD_BY_UNIT_ADDR_INT(inst, 2), ethernet),          \
-		     "Port 3 requires an ethernet phandle");                                       \
+	/* CPU port should be disabled on upstream switches in cascading setups */                 \
+	BUILD_ASSERT(!DT_NODE_HAS_STATUS_OKAY(DT_INST_CHILD_BY_UNIT_ADDR_INT(inst, 2)) ||          \
+			     DT_NODE_HAS_PROP(DT_INST_CHILD_BY_UNIT_ADDR_INT(inst, 2), ethernet),  \
+		     "Port 3 requires an ethernet phandle when enabled");                          \
                                                                                                    \
-	/* CPU port should set phy-connection-type */                                              \
-	BUILD_ASSERT(                                                                              \
-		DT_NODE_HAS_PROP(DT_INST_CHILD_BY_UNIT_ADDR_INT(inst, 2), phy_connection_type),    \
-		"Port 3 requires a PHY connection type");                                          \
+	/* CPU port should set phy-connection-type when enabled */                                 \
+	BUILD_ASSERT(!DT_NODE_HAS_STATUS_OKAY(DT_INST_CHILD_BY_UNIT_ADDR_INT(inst, 2)) ||          \
+			     DT_NODE_HAS_PROP(DT_INST_CHILD_BY_UNIT_ADDR_INT(inst, 2),             \
+					      phy_connection_type),                                \
+		     "Port 3 requires a PHY connection type when enabled");                        \
                                                                                                    \
 	BUILD_ASSERT(DT_INST_ENUM_IDX(inst, microchip_port_led_mode) <= BIT_MASK(2),               \
 		     "Invalid LED mode");                                                          \
