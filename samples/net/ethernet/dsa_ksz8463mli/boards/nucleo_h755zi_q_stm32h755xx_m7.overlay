@@ -315,4 +315,76 @@
 			status = "okay";
 		};
 	};
+
+	sw2: ethernet-switch@1 {
+		compatible = "microchip,ksz8463";
+
+		/* Chip-select 1 */
+		reg = <1>;
+
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		spi-max-frequency = <DT_FREQ_K(12500)>;
+
+		/* Enable IGMP snooping */
+		microchip,igmp-snoop-en;
+
+		/* Enable MLD snooping */
+		microchip,mld-snoop-en;
+
+		status = "okay";
+
+		/* User port 1 */
+		sw2_port1: port@0 {
+			compatible = "zephyr,dsa-port";
+			reg = <0>;
+
+			/* Use random MAC */
+			zephyr,random-mac-address;
+
+			status = "okay";
+
+			/* Internal PHY */
+			phy {
+				compatible = "microchip,ksz8463-phy";
+
+				/* Fall back on 10BASE Half-Duplex on auto-negotiation failure */
+				microchip,fixed-link-speed = "10BASE Half-Duplex";
+
+				status = "okay";
+			};
+		};
+
+		/* User port 2 */
+		sw2_port2: port@1 {
+			compatible = "zephyr,dsa-port";
+			reg = <1>;
+
+			zephyr,random-mac-address;
+
+			dsa-cascade-downstream = <&sw1_port2>;
+
+			status = "okay";
+
+			/* Internal PHY */
+			phy {
+				compatible = "microchip,ksz8463-phy";
+
+				/* Fall back on 100BASE Full-Duplex on auto-negotiation failure */
+				microchip,fixed-link-speed = "100BASE Full-Duplex";
+
+				status = "okay";
+			};
+		};
+
+		/* CPU port */
+		sw2_port3: port@2 {
+			compatible = "zephyr,dsa-port";
+
+			reg = <2>;
+
+			status = "disabled";
+		};
+	};
 };
