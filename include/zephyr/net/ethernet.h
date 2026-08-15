@@ -201,6 +201,9 @@ enum ethernet_hw_caps {
 
 	/** TX-Injection supported */
 	ETHERNET_TXINJECTION_MODE	= BIT(20),
+
+	/** DSA switch DSA (cascade) port */
+	ETHERNET_DSA_PORT		= BIT(21),
 };
 
 /** @cond INTERNAL_HIDDEN */
@@ -1041,10 +1044,18 @@ enum ethernet_hw_caps net_eth_get_hw_capabilities(struct net_if *iface)
 
 	NET_ASSERT(eth_ctx != NULL);
 
-	if (eth_ctx->dsa_port == DSA_CONDUIT_PORT) {
+	switch (eth_ctx->dsa_port) {
+	case DSA_CONDUIT_PORT:
 		caps = ETHERNET_DSA_CONDUIT_PORT;
-	} else if (eth_ctx->dsa_port == DSA_USER_PORT) {
+		break;
+	case DSA_USER_PORT:
 		caps = ETHERNET_DSA_USER_PORT;
+		break;
+	case DSA_PORT:
+		caps = ETHERNET_DSA_PORT;
+		break;
+	default:
+		break;
 	}
 #endif
 	NET_ASSERT(dev != NULL);
