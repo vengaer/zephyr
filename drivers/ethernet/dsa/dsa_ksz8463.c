@@ -1811,7 +1811,9 @@ static int ksz8463_init(const struct device *dev)
 	)
 
 #define KSZ8463_PORT_VERIFY_TAG_PROTO(port_id)                                                     \
-	COND_CODE_1(DT_NODE_HAS_PROP(port_id, ethernet),                                           \
+	COND_CODE_1(                                                                               \
+		UTIL_OR(DT_NODE_HAS_PROP(port_id, ethernet),		                           \
+			DT_NODE_HAS_PROP(port_id, dsa_cascade_downstream)),                        \
 		(BUILD_ASSERT(                                                                     \
 			DT_PROP_OR(port_id, dsa_tag_protocol, DSA_TAG_PROTO_NOTAG) ==              \
 				DSA_TAG_PROTO_NOTAG ||                                             \
