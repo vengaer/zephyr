@@ -35,3 +35,16 @@ child-binding:
       description:
         Tag protocol the switch using. The <zephyr/dt-bindings/ethernet/dsa_tag_proto.h>
         which provides macros should be included to use.
+    dsa-cascade-downstream:
+      type: phandle
+      description:
+        Used to associate ports in cascading - i.e. daisy-chained - setups. The property should
+        refer to another node with compatible zephyr,dsa-port.
+
+        When encountering a port with this property set, the DSA core treats both the port for
+        which the property is provided as well as the node referred to by the latter as cascading
+        ports. This allows Zephyr to treat what on each switch would be designated as user ports
+        as conduits and thereby being able to model arbitrary switch chains.
+
+        The property should be set in the node representing the cascading port on the upstream
+        switch, i.e. the switch that requires fewer hops to reach the router.
