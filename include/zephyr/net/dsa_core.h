@@ -89,6 +89,13 @@ struct dsa_switch_context {
 
 		/** @cond INTERNAL_HIDDEN */
 
+		/* Pointers to DSA cascading interfaces
+		 *
+		 * Should not be referenced by tag protocol implementations, use
+		 * iface_user.
+		 */
+		struct net_if *iface_dsa[DSA_PORT_MAX_COUNT];
+
 		/* Pointers to cascade port information.
 		 *
 		 * These may be accessed only in dsa_port_initialize().

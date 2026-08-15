@@ -26,5 +26,13 @@ struct net_if *dsa_user_get_iface(struct net_if *iface, int port_idx)
 		return NULL;
 	}
 
-	return dsa_switch_ctx->iface_user[port_idx];
+	/* Make sure port_idx does not identify a DSA port */
+	iface = dsa_switch_ctx->iface_user[port_idx];
+	eth_ctx = net_if_l2_data(iface);
+
+	if (eth_ctx->dsa_port == DSA_PORT) {
+		return NULL;
+	}
+
+	return iface;
 }
