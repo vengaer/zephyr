@@ -12,11 +12,42 @@ LOG_MODULE_REGISTER(net_dsa_core, CONFIG_NET_DSA_LOG_LEVEL);
 
 struct net_if *dsa_recv(struct net_if *iface, struct net_pkt *pkt)
 {
+	const struct dsa_switch_context *dsa_switch_ctx;
+	const struct ethernet_context *eth_ctx;
+	const struct dsa_port_config *cfg;
+	const struct device *dev;
+
 	if (iface == NULL || pkt == NULL) {
 		return iface;
 	}
 
-	/* Tag protocol handles to untag and re-direct interface */
+	if (IS_ENABLED(CONFIG_DSA_CASCADING)) {
+		/* Resolve cascading */
+		do {
+			eth_ctx = net_if_l2_data(iface);
+			if (eth_ctx == NULL) {
+				return iface;
+			}
+
+			/* Keep resolving until the first non-DSA port is reached */
+			if (eth_ctx->dsa_port != DSA_PORT) {
+				break;
+			}
+
+			dev = net_if_get_device(iface);
+			if (dev == NULL) {
+				return iface;
+			}
+
+			cfg = dev->config;
+			dsa_switch_ctx = dev->data;
+
+			/* Get the next interface in the chain with the help of the tag protocol. */
+			iface = dsa_tag_recv(iface, pkt);
+		} while (1);
+	}
+
+	/* Tag protocol handles the final untag and redirect */
 	return dsa_tag_recv(iface, pkt);
 }
 
