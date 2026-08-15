@@ -830,6 +830,10 @@ Other notable changes
     :zephyr:board:`Arm Musca-S1 <v2m_musca_s1>` (``v2m_musca_s1``) has been deprecated.
     This is to avoid a confusing state of partial support.
 
+* DSA
+
+  * The DSA now supports cascaded/daisy-chained switch setups.
+
 ..
   Any more descriptive subsystem or driver changes. Do you really want to write
   a paragraph or is it enough to link to the api/driver/Kconfig/board page above?
