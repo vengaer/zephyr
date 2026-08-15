@@ -24,6 +24,13 @@ config DSA_TAG_SIZE
 	help
 	  Set the DSA tag length in bytes.
 
+config DSA_CASCADING
+	bool "Support for switch cascading"
+	default y
+	help
+	  Enable support for modelling cascaded switch setups in which multiple switches
+	  are chained together to increase the total number of available user ports.
+
 module = NET_DSA
 module-dep = NET_LOG
 module-str = Log level for DSA
