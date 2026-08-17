@@ -33,8 +33,12 @@ zephyr_library_sources_ifdef(CONFIG_LWM2M_SWMGMT_OBJ_SUPPORT
     )
 zephyr_library_sources_ifdef(CONFIG_LWM2M_FIRMWARE_UPDATE_PULL_SUPPORT
     lwm2m_obj_firmware_pull.c
-    lwm2m_pull_context.c
     )
+
+if (CONFIG_LWM2M_FIRMWARE_UPDATE_PULL_SUPPORT OR CONFIG_LWM2M_ADVANCED_FIRMWARE_UPDATE_PULL_SUPPORT)
+	zephyr_library_sources(lwm2m_pull_context.c)
+endif()
+
 zephyr_library_sources_ifdef(CONFIG_LWM2M_SEND_SCHEDULER
     send_scheduler/send_scheduler_core.c
     send_scheduler/lwm2m_obj_send_scheduler.c
@@ -59,6 +63,9 @@ zephyr_library_sources_ifdef(CONFIG_LWM2M_ACCESS_CONTROL_ENABLE
     )
 zephyr_library_sources_ifdef(CONFIG_LWM2M_UCIFI_LPWAN
     ucifi_lpwan.c
+    )
+zephyr_library_sources_ifdef(CONFIG_LWM2M_ADVANCED_FIRMWARE_UPDATE_OBJ_SUPPORT
+    lwm2m_obj_advanced_firmware_update.c
     )
 
 # TLV Support

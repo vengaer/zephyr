@@ -72,22 +72,23 @@ extern "C" {
  */
 
 /* clang-format off */
-#define IPSO_OBJECT_GENERIC_SENSOR_ID       3300 /**< IPSO Generic Sensor object */
-#define IPSO_OBJECT_TEMP_SENSOR_ID          3303 /**< IPSO Temperature Sensor object */
-#define IPSO_OBJECT_HUMIDITY_SENSOR_ID      3304 /**< IPSO Humidity Sensor object */
-#define IPSO_OBJECT_LIGHT_CONTROL_ID        3311 /**< IPSO Light Control object */
-#define IPSO_OBJECT_ACCELEROMETER_ID        3313 /**< IPSO Accelerometer object */
-#define IPSO_OBJECT_MAGNETOMETER_ID         3314 /**< IPSO Magnetometer object */
-#define IPSO_OBJECT_VOLTAGE_SENSOR_ID       3316 /**< IPSO Voltage Sensor object */
-#define IPSO_OBJECT_CURRENT_SENSOR_ID       3317 /**< IPSO Current Sensor object */
-#define IPSO_OBJECT_PRESSURE_ID             3323 /**< IPSO Pressure Sensor object */
-#define IPSO_OBJECT_TIME_ID                 3333 /**< IPSO Time object */
-#define IPSO_OBJECT_BUZZER_ID               3338 /**< IPSO Buzzer object */
-#define IPSO_OBJECT_TIMER_ID                3340 /**< IPSO Timer object */
-#define IPSO_OBJECT_ONOFF_SWITCH_ID         3342 /**< IPSO On/Off Switch object */
-#define IPSO_OBJECT_PUSH_BUTTON_ID          3347 /**< IPSO Push Button object */
-#define UCIFI_OBJECT_BATTERY_ID             3411 /**< uCIFI Battery object */
-#define IPSO_OBJECT_FILLING_LEVEL_SENSOR_ID 3435 /**< IPSO Filling Level Sensor object */
+#define IPSO_OBJECT_GENERIC_SENSOR_ID              3300  /**< IPSO Generic Sensor object */
+#define IPSO_OBJECT_TEMP_SENSOR_ID                 3303  /**< IPSO Temperature Sensor object */
+#define IPSO_OBJECT_HUMIDITY_SENSOR_ID             3304  /**< IPSO Humidity Sensor object */
+#define IPSO_OBJECT_LIGHT_CONTROL_ID               3311  /**< IPSO Light Control object */
+#define IPSO_OBJECT_ACCELEROMETER_ID               3313  /**< IPSO Accelerometer object */
+#define IPSO_OBJECT_MAGNETOMETER_ID                3314  /**< IPSO Magnetometer object */
+#define IPSO_OBJECT_VOLTAGE_SENSOR_ID              3316  /**< IPSO Voltage Sensor object */
+#define IPSO_OBJECT_CURRENT_SENSOR_ID              3317  /**< IPSO Current Sensor object */
+#define IPSO_OBJECT_PRESSURE_ID                    3323  /**< IPSO Pressure Sensor object */
+#define IPSO_OBJECT_TIME_ID                        3333  /**< IPSO Time object */
+#define IPSO_OBJECT_BUZZER_ID                      3338  /**< IPSO Buzzer object */
+#define IPSO_OBJECT_TIMER_ID                       3340  /**< IPSO Timer object */
+#define IPSO_OBJECT_ONOFF_SWITCH_ID                3342  /**< IPSO On/Off Switch object */
+#define IPSO_OBJECT_PUSH_BUTTON_ID                 3347  /**< IPSO Push Button object */
+#define UCIFI_OBJECT_BATTERY_ID                    3411  /**< uCIFI Battery object */
+#define IPSO_OBJECT_FILLING_LEVEL_SENSOR_ID        3435  /**< IPSO Filling Level Sensor object */
+#define LWM2M_OBJECT_ADVANCED_FIRMWARE_UPDATE_ID   33629 /**< Advanced firmware update */
 /* clang-format on */
 
 /** @} */
@@ -576,6 +577,20 @@ int lwm2m_device_add_err(uint8_t error_code);
 
 /** @} */
 
+/**
+ * @name LWM2M Firmware Update object severity enumerators
+ *
+ * Severity of the firmware package. Useful when the supports deferred updates
+ * @{
+ */
+
+#define LWM2M_SEVERITY_CRITICAL  0 /**< Package should be installed urgently */
+#define LWM2M_SEVERITY_MANDATORY 1 /**< Package should be installed at the earlieest convenience   \
+				    */
+#define LWM2M_SEVERITY_OPTIONAL  2 /**< Package is optional */
+
+/** @} */
+
 #if defined(CONFIG_LWM2M_FIRMWARE_UPDATE_OBJ_SUPPORT) || defined(__DOXYGEN__)
 /**
  * @brief Set data callback for firmware block transfer.
@@ -778,6 +793,77 @@ int lwm2m_swmgmt_set_write_package_cb(uint16_t obj_inst_id, lwm2m_engine_set_dat
  */
 int lwm2m_swmgmt_install_completed(uint16_t obj_inst_id, int error_code);
 
+#endif
+
+#if defined(CONFIG_LWM2M_ADVANCED_FIRMWARE_UPDATE_OBJ_SUPPORT) || defined(__DOXYGEN__)
+int lwm2m_adv_fw_set_write_cb_inst(uint16_t obj_inst_id, lwm2m_engine_set_data_cb_t cb);
+#else
+static inline int lwm2m_adv_fw_set_write_cb_inst(uint16_t obj_inst_id,
+						 lwm2m_engine_set_data_cb_t cb)
+{
+	ARG_UNUSED(obj_inst_id);
+	ARG_UNUSED(cb);
+
+	return -ENOTSUP;
+}
+#endif
+
+#if defined(CONFIG_LWM2M_ADVANCED_FIRMWARE_UPDATE_OBJ_SUPPORT) || defined(__DOXYGEN__)
+lwm2m_engine_set_data_cb_t lwm2m_adv_fw_get_write_cb_inst(uint16_t obj_inst_id);
+#else
+static inline lwm2m_engine_set_data_cb_t lwm2m_adv_fw_get_write_cb_inst(uint16_t obj_inst_id)
+{
+	ARG_UNUSED(obj_inst_id);
+
+	return NULL;
+}
+#endif
+
+#if defined(CONFIG_LWM2M_ADVANCED_FIRMWARE_UPDATE_OBJ_SUPPORT) || defined(__DOXYGEN__)
+int lwm2m_adv_fw_set_update_cb_inst(uint16_t obj_inst_id, lwm2m_engine_execute_cb_t cb);
+#else
+static inline int lwm2m_adv_fw_set_update_cb_inst(uint16_t obj_inst_id,
+						  lwm2m_engine_execute_cb_t cb)
+{
+	ARG_UNUSED(obj_inst_id);
+	ARG_UNUSED(cb);
+
+	return -ENOTSUP;
+}
+#endif
+
+#if defined(CONFIG_LWM2M_ADVANCED_FIRMWARE_UPDATE_OBJ_SUPPORT) || defined(__DOXYGEN__)
+lwm2m_engine_execute_cb_t lwm2m_adv_fw_get_update_cb_inst(uint16_t obj_inst_id);
+#else
+static inline lwm2m_engine_execute_cb_t lwm2m_adv_fw_get_update_cb_inst(uint16_t obj_inst_id)
+{
+	ARG_UNUSED(obj_inst_id);
+
+	return NULL;
+}
+#endif
+
+#if defined(CONFIG_LWM2M_ADVANCED_FIRMWARE_UPDATE_OBJ_SUPPORT) || defined(__DOXYGEN__)
+int lwm2m_adv_fw_set_cancel_cb_inst(uint16_t obj_inst_id, lwm2m_engine_user_cb_t cb);
+#else
+static inline int lwm2m_adv_fw_set_cancel_cb_inst(uint16_t obj_inst_id, lwm2m_engine_user_cb_t cb)
+{
+	ARG_UNUSED(obj_inst_id);
+	ARG_UNUSED(cb);
+
+	return -ENOTSUP;
+}
+#endif
+
+#if defined(CONFIG_LWM2M_ADVANCED_FIRMWARE_UPDATE_OBJ_SUPPORT) || defined(__DOXYGEN__)
+lwm2m_engine_user_cb_t lwm2m_adv_fw_get_cancel_cb_inst(uint16_t obj_inst_id);
+#else
+static inline lwm2m_engine_user_cb_t lwm2m_adv_fw_get_cancel_cb_inst(uint16_t obj_inst_id)
+{
+	ARG_UNUSED(obj_inst_id);
+
+	return NULL;
+}
 #endif
 
 #if defined(CONFIG_LWM2M_EVENT_LOG_OBJ_SUPPORT) || defined(__DOXYGEN__)

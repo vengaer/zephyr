@@ -761,6 +761,32 @@ config LWM2M_GATEWAY_IOT_DEVICE_OBJECTS_MAX_STR_SIZE
 
 endif # LWM2M_GATEWAY_OBJ_SUPPORT
 
+config LWM2M_ADVANCED_FIRMWARE_UPDATE_OBJ_SUPPORT
+	bool "LwM2M Advanced Firmware Update Object (ID 33629)"
+	default y
+	help
+	  Include support for LwM2M Advanced Firmware Firmware Update Object. The object adheres to
+	  the object definition provided by AVSystems.
+
+if LWM2M_ADVANCED_FIRMWARE_UPDATE_OBJ_SUPPORT
+
+config LWM2M_ADVANCED_FIRMWARE_UPDATE_OBJ_INSTANCE_COUNT
+	int "Maximum # of LwM2M Advanced Firmware Update object instances"
+	default 1
+	help
+	  Number of advanced firmware update objects instances the client to support.
+	  Instance numbering starts at 0.
+
+config LWM2M_ADVANCED_FIRMWARE_UPDATE_PULL_SUPPORT
+	bool "Advanced Firmware Update object pull support"
+	default y
+	depends on (HTTP_PARSER || HTTP_PARSER_URL)
+	help
+	  Include support for pulling a file from a remote server via
+	  block transfer and "FIRMWARE PACKAGE URI" resource.
+
+endif # LWM2M_ADVANCED_FIRMWARE_UPDATE_OBJ_SUPPORT
+
 source "subsys/net/lib/lwm2m/Kconfig.ipso"
 
 source "subsys/net/lib/lwm2m/Kconfig.ucifi"

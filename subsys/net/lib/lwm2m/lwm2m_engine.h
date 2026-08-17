@@ -279,6 +279,22 @@ uint8_t lwm2m_firmware_get_update_result_inst(uint16_t obj_inst_id);
 uint8_t lwm2m_firmware_get_update_result(void);
 #endif
 
+#if defined(CONFIG_LWM2M_ADVANCED_FIRMWARE_UPDATE_OBJ_SUPPORT)
+
+/**
+ * @brief Get update state for specified @p obj_inst_id.
+ *
+ * Returns the update state, which matches that specified in LWM2M SPEC E.6 regarding the
+ * firmware update, of the Advanced Firmware Update object instance identified by @p obj_inst_id.
+ * (i.e Gets the value of resource 33629/ @p obj_inst_id /3)
+ *
+ * @param[in] obj_inst_id Object instance id of the firmware object
+ * @return (STATE_IDLE through STATE_UPDATING)
+ */
+uint8_t lwm2m_adv_fw_get_update_state_inst(uint16_t obj_inst_id);
+
+#endif /* CONFIG_LWM2M_ADVANCED_FIRMWARE_UPDATE_OBJ_SUPPORT */
+
 /* Network Layer */
 /**
  * @brief Opens a socket for the client_ctx if it does not exist. Saves the
