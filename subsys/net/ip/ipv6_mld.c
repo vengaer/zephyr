@@ -12,6 +12,7 @@
 LOG_MODULE_DECLARE(net_ipv6, CONFIG_NET_IPV6_LOG_LEVEL);
 
 #include <errno.h>
+#include <zephyr/net/ethernet.h>
 #include <zephyr/net/mld.h>
 #include <zephyr/net/net_core.h>
 #include <zephyr/net/net_log.h>
@@ -215,7 +216,7 @@ drop:
 
 int net_ipv6_mld_rejoin(struct net_if *iface, struct net_if_mcast_addr *addr)
 {
-	int ret;
+	int ret = 0;
 
 	if (net_if_flag_is_set(iface, NET_IF_IPV6_NO_MLD)) {
 		return 0;
@@ -236,11 +237,19 @@ out:
 
 	net_if_mcast_monitor(iface, &addr->address, true);
 
+	if (net_if_l2(iface) == &NET_L2_GET_NAME(ETHERNET)) {
+		ret = net_eth_mac_filter(iface, addr, ETHERNET_FILTER_TYPE_DST_MAC_ADDRESS, true);
+		if (ret == -ENOTSUP) {
+			NET_DBG("MAC filter not supported");
+			ret = 0;
+		}
+	}
+
 	net_mgmt_event_notify_with_info(NET_EVENT_IPV6_MCAST_JOIN, iface,
 					&addr->address.in6_addr,
 					sizeof(struct net_in6_addr));
 
-	return 0;
+	return ret;
 }
 
 int net_ipv6_mld_join(struct net_if *iface, const struct net_in6_addr *addr)
@@ -284,6 +293,15 @@ out:
 
 	net_if_mcast_monitor(iface, &maddr->address, true);
 
+	if (net_if_l2(iface) == &NET_L2_GET_NAME(ETHERNET)) {
+		ret = net_eth_mac_filter(iface, addr, ETHERNET_FILTER_TYPE_DST_MAC_ADDRESS, true);
+
+		if (ret == -ENOTSUP) {
+			NET_DBG("MAC filter not supported");
+			ret = 0;
+		}
+	}
+
 	net_mgmt_event_notify_with_info(NET_EVENT_IPV6_MCAST_JOIN, iface,
 					&maddr->address.in6_addr,
 					sizeof(struct net_in6_addr));
@@ -323,6 +341,21 @@ int net_ipv6_mld_leave(struct net_if *iface, const struct net_in6_addr *addr)
 
 out:
 	net_if_mcast_monitor(iface, &removed_addr, false);
+
+	if (net_if_l2(iface) == &NET_L2_GET_NAME(ETHERNET)) {
+		ret = net_eth_mac_filter(iface, addr, ETHERNET_FILTER_TYPE_DST_MAC_ADDRESS, false);
+
+		switch (ret) {
+		case 0:
+			break;
+		case -ENOTSUP:
+			NET_DBG("MAC filter not supported");
+			break;
+		default:
+			NET_ERR("Could not modify MAC filter: %d", ret);
+			break;
+		}
+	}
 
 	net_mgmt_event_notify_with_info(NET_EVENT_IPV6_MCAST_LEAVE, iface,
 					&removed_addr.in6_addr,
