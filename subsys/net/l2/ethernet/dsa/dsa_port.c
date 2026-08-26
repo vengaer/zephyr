@@ -134,6 +134,9 @@ int dsa_port_initialize(const struct device *dev)
 		}
 
 		eth_ctx->dsa_port = DSA_PORT;
+
+		/* Upstream DSA port is the host */
+		dsa_switch_ctx->iface_host = iface;
 	}
 
 	/* Find the connection of conduit port and cpu port */
@@ -151,6 +154,9 @@ int dsa_port_initialize(const struct device *dev)
 		eth_ctx_conduit = net_if_l2_data(dsa_switch_ctx->iface_conduit);
 		eth_ctx_conduit->dsa_switch_ctx = dsa_switch_ctx;
 		eth_ctx_conduit->dsa_port = DSA_CONDUIT_PORT;
+
+		/* CPU port is the host */
+		dsa_switch_ctx->iface_host = iface;
 	}
 
 	if (eth_ctx->dsa_port != DSA_PORT && cfg->ethernet_connection == NULL) {

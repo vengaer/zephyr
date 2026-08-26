@@ -416,6 +416,10 @@ New APIs and options
   * :c:macro:`DT_IRQN_BY_NAME`
   * :c:macro:`DT_INST_IRQN_BY_NAME`
 
+* DSA
+
+  * :c:member:`dsa_switch_context.iface_host`
+
 * Haptics
 
   * :c:enumerator:`haptics_monitor`

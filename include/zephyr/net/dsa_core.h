@@ -108,6 +108,9 @@ struct dsa_switch_context {
 	/** Pointer to DSA conduit network interface */
 	struct net_if *iface_conduit;
 
+	/** Pointer to the host (CPU or upstream DSA port) interface */
+	struct net_if *iface_host;
+
 	/** DSA specific API callbacks */
 	struct dsa_api *dapi;
 
