@@ -131,3 +131,27 @@ int dsa_eth_init(struct net_if *iface)
 
 	return 0;
 }
+
+struct net_if *dsa_conduit_get_iface(struct net_if *iface)
+{
+	const struct device *dev = net_if_get_device(iface);
+	const struct dsa_switch_context *dsa_switch_ctx;
+	const struct ethernet_context *eth_ctx;
+
+	if (net_if_l2(iface) != &NET_L2_GET_NAME(ETHERNET)) {
+		return NULL;
+	}
+
+	eth_ctx = net_if_l2_data(iface);
+	switch (eth_ctx->dsa_port) {
+	case DSA_USER_PORT:
+	case DSA_CPU_PORT:
+	case DSA_PORT:
+		break;
+	default:
+		return NULL;
+	}
+
+	dsa_switch_ctx = dev->data;
+	return dsa_switch_ctx->iface_conduit;
+}

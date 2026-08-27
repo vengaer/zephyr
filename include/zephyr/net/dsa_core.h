@@ -259,6 +259,25 @@ extern const struct ethernet_api dsa_eth_api;
  */
 struct net_if *dsa_user_get_iface(struct net_if *iface, int port_idx);
 
+/**
+ * @brief       Get switch conduit interface
+ *
+ * In this context, the conduit is the downstream port to which the host port
+ * of the switch on which @p iface is found is connected to. This conduit may
+ * be either a downstream DSA port - i.e. have the type DSA_PORT - or a conduit
+ * proper with the type DSA_CONDUIT_PORT.
+ *
+ * The interface corresponding to the DSA_CONDUIT_PORT to which a switch chain
+ * is connected can be obtained by repeatedly invoking this function until the
+ * returned interface as
+ *
+ * @param[in]   iface Interface of one of the ports in a switch chain
+ *
+ * @retval >0   Address of the conduit interface
+ * @retval NULL @p iface is not a switch port
+ */
+struct net_if *dsa_conduit_get_iface(struct net_if *iface);
+
 #ifdef __cplusplus
 }
 #endif

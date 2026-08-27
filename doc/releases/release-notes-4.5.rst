@@ -419,6 +419,7 @@ New APIs and options
 * DSA
 
   * :c:member:`dsa_switch_context.iface_host`
+  * :c:func:`dsa_conduit_get_iface`
 
 * Haptics
 
